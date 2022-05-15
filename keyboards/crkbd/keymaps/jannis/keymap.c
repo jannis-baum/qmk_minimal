@@ -34,20 +34,55 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 #if defined(OLED_ENABLE) && defined(RAW_ENABLE)
+#include <stdlib.h>
 #include "raw_hid.h"
+#include "transactions.h"
+
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     if (!is_keyboard_master()) return OLED_ROTATION_180;
     return rotation;
 }
 
-void raw_hid_receive(uint8_t *data, uint8_t length) {
+void oled_draw_line(uint8_t *data) {
     oled_set_cursor(0, *data);
-    for (uint8_t i = 1; i < oled_max_chars(); i++) {
+    for (uint8_t i = 1; i < min(oled_max_chars(), RAW_EPSIZE); i++) {
         oled_write_char(*(data+i), false);
     }
-    raw_hid_send(data, length);
 }
 
+void user_sync_oled_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data) {
+    oled_draw_line((uint8_t*)in_data);
+}
+
+void keyboard_post_init_user(void) {
+    transaction_register_rpc(USER_SYNC_OLED, user_sync_oled_handler);
+}
+
+uint8_t *oled_sync_todo = NULL;
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+    if (*data) {
+        if (oled_sync_todo) free(oled_sync_todo);
+        oled_sync_todo = malloc((length - 1) * sizeof(uint8_t*));
+        for (uint8_t i = 1; i < length; i++) {
+            *(oled_sync_todo+i-1) = *(data+i);
+        }
+    }
+    else oled_draw_line(data+1);
+    raw_hid_send(data, RAW_EPSIZE);
+}
+
+void housekeeping_task_user(void) {
+    if (!oled_sync_todo || !is_keyboard_master()) return;
+    static uint32_t last_sync = 0;
+    if (timer_elapsed32(last_sync) < 500) return;
+
+    if(transaction_rpc_send(USER_SYNC_OLED, RAW_EPSIZE-1, oled_sync_todo)) {
+        last_sync = timer_read32();
+        free(oled_sync_todo);
+        oled_sync_todo = NULL;
+    }
+}
 
 #endif
