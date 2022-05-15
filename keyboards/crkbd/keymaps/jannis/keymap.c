@@ -42,8 +42,11 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
 }
 
 void raw_hid_receive(uint8_t *data, uint8_t length) {
+    oled_set_cursor(0, *data);
+    for (uint8_t i = 1; i < oled_max_chars(); i++) {
+        oled_write_char(*(data+i), false);
+    }
     raw_hid_send(data, length);
-    oled_write((char *)data, false);
 }
 
 
