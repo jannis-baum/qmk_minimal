@@ -34,9 +34,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 #if defined(OLED_ENABLE) && defined(RAW_ENABLE)
+
 #include <stdlib.h>
 #include "raw_hid.h"
 #include "transactions.h"
+#include "font_drawing.h"
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
@@ -45,15 +47,8 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     return rotation;
 }
 
-void oled_draw_line(uint8_t *data) {
-    oled_set_cursor(0, *data);
-    for (uint8_t i = 1; i < min(oled_max_chars(), RAW_EPSIZE); i++) {
-        oled_write_char(*(data+i), false);
-    }
-}
-
 void user_sync_oled_handler(uint8_t in_buflen, const void* in_data, uint8_t out_buflen, void* out_data) {
-    oled_draw_line((uint8_t*)in_data);
+    oled_draw((uint8_t*)in_data);
 }
 
 void keyboard_post_init_user(void) {
@@ -69,7 +64,7 @@ void raw_hid_receive(uint8_t *data, uint8_t length) {
             *(oled_sync_todo+i-1) = *(data+i);
         }
     }
-    else oled_draw_line(data+1);
+    else oled_draw(data+1);
     raw_hid_send(data, RAW_EPSIZE);
 }
 

@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MASTER_LEFT
 #define SPLIT_TRANSACTION_IDS_USER USER_SYNC_OLED
 
-#define OLED_FONT_H "keyboards/crkbd/lib/glcdfont.c"
-//#define OLED_FONT_HEIGHT 16
-//#define OLED_FONT_WIDTH 12
-//#define OLED_FONT_END 55
+#define OLED_FONT_H "keyboards/crkbd/keymaps/jannis/font_data.c"
+#define OLED_FONT_WIDTH 9
+#define OLED_FONT_END 119
